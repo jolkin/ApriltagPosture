@@ -78,6 +78,7 @@ class ApriltagTracker:
         # initialize x and y coord so we don't get errors later
         self.xCoord = 0
         self.yCoord = 0
+        self.zCoord = 0
 
         # initialize array for frames to be stored in
         self.frames = []
@@ -138,7 +139,6 @@ class ApriltagTracker:
                     self.rho = self.rho+math.pi*2
                 calculatedTheta = (theta-math.pi/2)
 
-                print("{},{},{} | {},{}".format(x, y, z, self.phi, self.rho))
 
                 # reproject onto image overlay
                 cv2.line(frame, (int(len(img[0]) / 2), 0), (int(len(img[0]) / 2), len(img)), (0, 0, 255))
@@ -152,10 +152,11 @@ class ApriltagTracker:
                 # set local vals and write frame out to video
                 self.xCoord = x
                 self.yCoord = y
+                self.zCoord = z
                 self.videoWriter.write(frame)
             cv2.imshow("live", frame)
             cv2.waitKey(1)
-        return self.xCoord, self.yCoord, self.phi, self.rho, self.pixelsFromCenterX, self.pixelsFromCenterY
+        return self.xCoord, self.yCoord, self.zCoord, self.phi, self.rho, self.pixelsFromCenterX, self.pixelsFromCenterY
 
     def toCoords(self, detection, pos, dist, cameraMatrix):
         """
@@ -283,7 +284,9 @@ class ApriltagTracker:
         thread = threads.Thread(target=self.takePics)
         thread.start()
         while True:
-            self.analyzeFrame()
+            x, y, z, phi, rho, hOffset, vOffset = self.analyzeFrame()
+            print("{},{},{} | {},{}".format(x, y, z, phi, rho))
+
 
 def decomposeSO3(rotationMatrix):
     thetaX = math.atan2(rotationMatrix[2, 1], rotationMatrix[2, 2])
