@@ -12,7 +12,9 @@ import sys
 import math
 import os
 import threading as threads
+import queue
 
+q = queue.LifoQueue(maxsize=200)
 
 os.system('v4l2-ctl -d /dev/video1 -c exposure_absolute=20 -c gain=255 -c exposure_auto=1 -c backlight_compensation=1 -c brightness=128')
 
@@ -102,7 +104,7 @@ class ApriltagTracker:
     def getFeedback(self):
         return self.feedback
 
-    def analyzeFrame(self):
+    def analyzeFrame(self, image= None):
         """
         pops the latest frame off the stack of frames created by takePics and determines the x coord, y coord,
         and orientation of the camera relative to the april tag in the frame. If there is no apriltag in the frame it
@@ -114,8 +116,10 @@ class ApriltagTracker:
 
         :return: x, y, z, yaw, pitch horizontal frame offset, vertical frame offset
         """
-        if len(self.frames) > 0:
-            frame = self.frames.pop()
+        if not q.empty() or image is not None:
+            frame = image
+            if not q.empty():
+                frame = q.get(False)
             frame = cv2.undistort(frame, self.cameraMatrix, self.distortion, None, self.fixedMatrix)
             # convert to gray for apriltag detection
             gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
@@ -250,42 +254,43 @@ class ApriltagTracker:
 
         return scaledExtrinsics[2][2] * self.exp_factor, self.exp_factor*scaledExtrinsics[:3,2], scaledExtrinsics[1][2]*self.exp_factor
 
-    def takePics(self):
-        """
-        Take pictures and add them to the queue of picture to be processed
-        :return: none
-        """
-        video = cv2.VideoCapture(self.camera)
-        video.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
-        video.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
-        video.set(cv2.CAP_PROP_FPS, 30)
-
-
-
-        if not video.isOpened():
-            print("Could not open video")
-            sys.exit()
-
-        ok, frame = video.read()
-        if not ok:
-            print("Cannot read video")
-            sys.exit()
-
-        while True:
-            ok, frame = video.read()
-            self.frames.append(frame)
-
 
     def startTracking(self):
         """
         Start multiple threads to perform tracking
         :return: None
         """
-        thread = threads.Thread(target=self.takePics)
+        thread = threads.Thread(target=takePics, args=(self.camera, self.width, self.height))
         thread.start()
         while True:
             x, y, z, phi, rho, hOffset, vOffset = self.analyzeFrame()
             print("{},{},{} | {},{}".format(x, y, z, phi, rho))
+
+def takePics(camera, width, height):
+    """
+    Take pictures and add them to the queue of picture to be processed
+    :return: none
+    """
+    video = cv2.VideoCapture(camera)
+    video.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+    video.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+    video.set(cv2.CAP_PROP_FPS, 30)
+
+
+
+    if not video.isOpened():
+        print("Could not open video")
+        sys.exit()
+
+    ok, frame = video.read()
+    if not ok:
+        print("Cannot read video")
+        sys.exit()
+
+    while True:
+        ok, frame = video.read()
+        q.put(frame)
+
 
 
 def decomposeSO3(rotationMatrix):
