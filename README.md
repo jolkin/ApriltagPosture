@@ -21,3 +21,17 @@ will vary from camera-to-camera, but can be easily found by following these step
 5. Calculate the ratio between each distance and its correspond y coordinate. 
 6. Set "exp_factor" to the average of these ratios.
 
+## How To Use
+
+To use the module, you need to do two things within your code. First you need to 
+start a thread that runs the "takePics" function. This will populate the image queue.
+
+The other thing you need to do, is instantiate a tracker object with the appropriate values. This object is what
+will actually be processing the images to extact the pose.
+
+All you need to do is call the analyzeFrame function everytime you want to get the pose of from the most
+recently taken picture. 
+
+If you have a series of images you want to process that are not taken by a camera in real-time, this is possible as well. 
+Just make sure you never call the "takePics" function, and instead you pass each image into the 
+analyzeFrame function.

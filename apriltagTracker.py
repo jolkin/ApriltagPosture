@@ -104,7 +104,7 @@ class ApriltagTracker:
     def getFeedback(self):
         return self.feedback
 
-    def analyzeFrame(self, image= None):
+    def analyzeFrame(self, image=None):
         """
         pops the latest frame off the stack of frames created by takePics and determines the x coord, y coord,
         and orientation of the camera relative to the april tag in the frame. If there is no apriltag in the frame it
@@ -114,6 +114,7 @@ class ApriltagTracker:
         apriltag (called the "frame offset"). This is a measurement from -1 to 1 that is proportional to the distance
         in pixels between the detected center of the apriltag and the center of the frame.
 
+        :param image optional argument containing the picture you wish to analyze. Only works when the queue is empty
         :return: x, y, z, yaw, pitch horizontal frame offset, vertical frame offset
         """
         if not q.empty() or image is not None:
