@@ -178,9 +178,17 @@ class ApriltagTracker:
 
         # in experimentation solution 2 always yielded the correct solution
         optI = 3
+        goalrotvec = rotvec[3]
 
+        fourdmtx = np.matrix([[goalrotvec[0, 0], goalrotvec[0, 1], goalrotvec[0, 2], pos[0]],
+                              [goalrotvec[1, 0], goalrotvec[1, 1], goalrotvec[1, 2], pos[1]],
+                              [goalrotvec[2, 0], goalrotvec[2, 1], goalrotvec[2, 2], pos[2]],
+                              [0., 0., 0., 1.]])
         # decompose rotation matrix into euler angles
         vals = decomposeSO3(rotvec[optI])
+        inverted = -np.linalg.inv(fourdmtx) * np.sign(1 - abs(vals[2]))
+
+
         theta = (vals[1]*np.sign(1-abs(vals[2]))) - (math.atan2((pos[0]), pos[2]))
         subtract =  -vals[0]
         if np.sign(1-abs(vals[2])) > 0:
@@ -193,7 +201,7 @@ class ApriltagTracker:
         y = dist * math.cos(theta)
         z = dist * math.sin(phi)
 
-        return x, y, z, theta, (vals[1]*np.sign(1-vals[2])), subtract
+        return inverted[0], inverted[2], inverted[1], theta, (vals[1]*np.sign(1-vals[2])), subtract
 
     def getCoords(self):
         """
